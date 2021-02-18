@@ -4,19 +4,19 @@ context.strokeStyle = "#ff0000"
 context.lineJoin = "round"
 context.lineWidth = 5
 
-const clickX = []
-const clickY = []
-const clickDrag = []
+let data = Array(canvas.width).fill(null)
 let paint = false
 
 window.onload = window.onresize = () => {
+    console.log("resize")
+    data = data.map(y => y ? (y * window.innerHeight / canvas.height) : y)
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     redraw()
 }
 
-document.querySelector("button").onclick = () => {
-    const el = canvas
+document.querySelector("button.start").onclick = () => {
+    const el = document.querySelector(".canvas")
     if (el.requestFullscreen) {
         el.requestFullscreen()
     } else if (el.mozRequestFullScreen) {
@@ -28,93 +28,88 @@ document.querySelector("button").onclick = () => {
     }
 
     document.querySelector(".start-screen").hidden = true
-    document.querySelector("canvas").hidden = false
+    document.querySelector(".canvas").hidden = false
 }
 
+document.querySelector("button.clear").onclick = () => {
+    data.fill(null)
+    redraw()
+}
+
+document.querySelector("button.submit").onclick = () => {
+    console.log("TODO")
+}
+
+let lastPoint = null
+
 const addClick = (x, y, dragging) => {
-    clickX.push(x)
-    clickY.push(y)
-    clickDrag.push(dragging)
+    if (dragging) {
+        let start, end;
+        if (x < lastPoint[0]) {
+            start = [x, y]
+            end = lastPoint
+        } else {
+            start = lastPoint
+            end = [x, y]
+        }
+        for (let i = 0; i <= end[0] - start[0]; i++) {
+            data[start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0]))
+        }
+        data[x] = y
+    }
+
+    lastPoint = [x, y]
 }
 
 const redraw = () => {
     // Clears the canvas
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
-    for (var i = 0; i < clickX.length; i += 1) {
-        if (!clickDrag[i] && i == 0) {
-            context.beginPath()
-            context.moveTo(clickX[i], clickY[i])
-            context.stroke()
-        } else if (!clickDrag[i] && i > 0) {
+    context.beginPath()
+    for (let i = 0; i < data.length; i++) {
+        if (data[i] === null) {
             context.closePath()
-
             context.beginPath()
-            context.moveTo(clickX[i], clickY[i])
-            context.stroke()
         } else {
-            context.lineTo(clickX[i], clickY[i])
+            context.lineTo(i, data[i])
             context.stroke()
         }
     }
-}
-
-const drawNew = () => {
-    const i = clickX.length - 1
-    if (!clickDrag[i]) {
-        if (clickX.length == 0) {
-            context.beginPath()
-            context.moveTo(clickX[i], clickY[i])
-            context.stroke()
-        } else {
-            context.closePath()
-
-            context.beginPath()
-            context.moveTo(clickX[i], clickY[i])
-            context.stroke()
-        }
-    } else {
-        context.lineTo(clickX[i], clickY[i])
-        context.stroke()
-    }
+    context.closePath()
 }
 
 const mouseDownEventHandler = (e) => {
     paint = true
     const x = e.pageX - canvas.offsetLeft
     const y = e.pageY - canvas.offsetTop
-    if (paint) {
-        addClick(x, y, false)
-        drawNew()
-    }
+    addClick(x, y, false)
+    redraw()
 }
 
-const touchstartEventHandler = (e) => {
+const touchStartEventHandler = (e) => {
+    console.log("start!")
     paint = true
-    if (paint) {
-        addClick(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop, false)
-        drawNew()
-    }
+    addClick(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop, false)
+    redraw()
 }
 
 const mouseUpEventHandler = (e) => {
-    context.closePath()
+    console.log("end!")
     paint = false
 }
 
 const mouseMoveEventHandler = (e) => {
-    const x = e.pageX - canvas.offsetLeft
-    const y = e.pageY - canvas.offsetTop
     if (paint) {
-        addClick(x, y, true)
-        drawNew()
+        addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop, true)
+        redraw()
     }
 }
 
 function touchMoveEventHandler(e) {
     if (paint) {
-        addClick(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop, true)
-        drawNew()
+        console.log("drag!", e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop)
+        addClick(Math.round(e.touches[0].pageX - canvas.offsetLeft), Math.round(e.touches[0].pageY - canvas.offsetTop), true)
+        redraw()
     }
 }
 
@@ -126,10 +121,10 @@ function setUpHandler(isMouseandNotTouch, detectEvent) {
         canvas.addEventListener('mousedown', mouseDownEventHandler)
         mouseDownEventHandler(detectEvent)
     } else {
-        canvas.addEventListener('touchstart', touchstartEventHandler)
+        canvas.addEventListener('touchstart', touchStartEventHandler)
         canvas.addEventListener('touchmove', touchMoveEventHandler)
         canvas.addEventListener('touchend', mouseUpEventHandler)
-        touchstartEventHandler(detectEvent)
+        touchStartEventHandler(detectEvent)
     }
 }
 

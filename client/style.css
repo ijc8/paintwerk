@@ -24,7 +24,15 @@ canvas {
     text-align: center;
 }
 
-.start-button {
+button.start {
     width: 50%;
     height: 50%;
+}
+
+.controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
 }
