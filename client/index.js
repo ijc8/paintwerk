@@ -7,6 +7,8 @@ context.lineWidth = 5
 let data = Array(canvas.width).fill(null)
 let paint = false
 
+socket = new WebSocket("ws://localhost:8765")
+
 window.onload = window.onresize = () => {
     console.log("resize")
     data = data.map(y => y ? (y * window.innerHeight / canvas.height) : y)
@@ -37,7 +39,7 @@ document.querySelector("button.clear").onclick = () => {
 }
 
 document.querySelector("button.submit").onclick = () => {
-    console.log("TODO")
+    socket.send(JSON.stringify(data.map(y => y ? 1 - Math.min(1, y / canvas.height) : null)))
 }
 
 let lastPoint = null
