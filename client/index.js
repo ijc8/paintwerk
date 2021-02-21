@@ -1,17 +1,16 @@
 const canvas = document.querySelector("canvas")
 const context = canvas.getContext("2d")
-context.strokeStyle = "#ffffff"
-context.lineJoin = "round"
-context.lineWidth = 5
 
-let data = Array(canvas.width).fill(null)
+const colors = ["#ffffff", "#ff714d", "#05bfee", "#4ec921"]
+let data = Array(4).fill(0).map(() => Array(canvas.width).fill(null))
+let color = 0
 let paint = false
 
 socket = new WebSocket("ws://localhost:8765")
 
 window.onload = window.onresize = () => {
     console.log("resize")
-    data = data.map(y => y ? (y * window.innerHeight / canvas.height) : y)
+    data = data.map(row => row.map(y => y ? (y * window.innerHeight / canvas.height) : y))
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
     redraw()
@@ -34,13 +33,22 @@ document.querySelector("button.start").onclick = () => {
 }
 
 document.querySelector("button.clear").onclick = () => {
-    data.fill(null)
+    data.forEach(row => row.fill(null))
     redraw()
 }
 
 document.querySelector("button.submit").onclick = () => {
-    socket.send(JSON.stringify(data.map(y => y ? 1 - Math.min(1, y / canvas.height) : null)))
+    socket.send(JSON.stringify(data.map(row => row.map(y => y ? 1 - Math.min(1, y / canvas.height) : null))))
 }
+
+document.querySelectorAll(".palette button").forEach((el, index) => {
+    if (index === color) el.classList.add("selected")
+    el.onclick = (event) => {
+        document.querySelectorAll(".palette button").forEach(e => e.classList.remove("selected"))
+        el.classList.add("selected")
+        color = index
+    }
+})
 
 let lastPoint = null
 
@@ -55,32 +63,35 @@ const addClick = (x, y, dragging) => {
             end = [x, y]
         }
         for (let i = 0; i <= end[0] - start[0]; i++) {
-            data[start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0]))
+            data[color][start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0]))
         }
-        data[x] = y
+        data[color][x] = y
     }
 
     lastPoint = [x, y]
 }
 
 const redraw = () => {
-    context.strokeStyle = "#ffffff"
+    // console.log("redraw")
     context.lineJoin = "round"
     // context.lineWidth = 5
     // Clears the canvas
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 
-    context.beginPath()
-    for (let i = 0; i < data.length; i++) {
-        if (data[i] === null) {
-            context.closePath()
-            context.beginPath()
-        } else {
-            context.lineTo(i, data[i])
-            context.stroke()
+    for (let color = 0; color < data.length; color++) {
+        context.strokeStyle = colors[color]
+        context.beginPath()
+        for (let i = 0; i < data[color].length; i++) {
+            if (data[color][i] === null) {
+                context.closePath()
+                context.beginPath()
+            } else {
+                context.lineTo(i, Math.round(data[color][i]))
+                context.stroke()
+            }
         }
+        // context.closePath()
     }
-    context.closePath()
 }
 
 const mouseDownEventHandler = (e) => {
@@ -88,14 +99,12 @@ const mouseDownEventHandler = (e) => {
     const x = e.pageX - canvas.offsetLeft
     const y = e.pageY - canvas.offsetTop
     addClick(x, y, false)
-    redraw()
 }
 
 const touchStartEventHandler = (e) => {
     console.log("start!")
     paint = true
     addClick(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop, false)
-    redraw()
 }
 
 const mouseUpEventHandler = (e) => {

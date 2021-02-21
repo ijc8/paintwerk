@@ -64,3 +64,36 @@ button.start {
     display: flex;
     flex-direction: column;
 }
+
+.palette {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+}
+
+.palette button {
+    width: 32px;
+    height: 32px;
+    filter: brightness(70%);
+}
+
+.palette button.selected {
+    border: 2px solid #eeeeee;
+    filter: brightness(100%);
+}
+
+.palette .color-0 {
+    background-color: white;
+}
+
+.palette .color-1 {
+    background-color: #ff714d;
+}
+
+.palette .color-2 {
+    background-color: #05bfee;
+}
+
+.palette .color-3 {
+    background-color: #4ec921 /*#f7e41c*/;
+}
