@@ -11,7 +11,7 @@ let playing = false
 let playheadPos = 0
 let hasMouse = true
 
-socket = new WebSocket("ws://localhost:8765")
+socket = new WebSocket("ws://" + location.host)
 
 const send = (obj) => {
     // console.log("sending", obj)
@@ -191,12 +191,13 @@ const redraw = () => {
         for (let i = 0; i < data[color].length; i++) {
             if (data[color][i] === null) {
                 // context.closePath()
+                context.stroke()
                 context.beginPath()
             } else {
                 context.lineTo(i, Math.round(data[color][i]))
-                context.stroke()
             }
         }
+        context.stroke()
         // context.closePath()
     }
 }
