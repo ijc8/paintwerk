@@ -5,7 +5,8 @@
     <link href="style.css" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet"> 
+    <link href="https://fonts.googleapis.com/css2?family=Nunito&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   </head>
   <body>
     <div class="start-screen">
@@ -15,9 +16,12 @@
     </div>
     <div class="canvas" hidden>
         <canvas width="1920" height="1080"></canvas>
+        <div class="playhead"></div>
         <div class="controls">
-            <button class="submit">PLAY</button>
-            <button class="clear">CLEAR</button>
+            <button class="play"><span class="material-icons">play_arrow</span></button>
+            <button class="loop"><span class="material-icons">loop</span></button>
+            <button class="clear"><span class="material-icons">clear</span></button>
+            <input type="number" class="rate" placeholder="s"></input>
         </div>
         <div class="palette">
           <button class="color-0"></button>

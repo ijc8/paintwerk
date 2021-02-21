@@ -5,6 +5,9 @@ const colors = ["#ffffff", "#ff714d", "#05bfee", "#4ec921"]
 let data = Array(4).fill(0).map(() => Array(canvas.width).fill(null))
 let color = 0
 let paint = false
+let loop = false
+let playing = false
+let playheadPos = 0
 
 socket = new WebSocket("ws://localhost:8765")
 
@@ -32,13 +35,73 @@ document.querySelector("button.start").onclick = () => {
     document.querySelector(".canvas").hidden = false
 }
 
+const loopButton = document.querySelector("button.loop")
+loopButton.onclick = (e) => {
+    if (loop) {
+        loop = false
+        loopButton.classList.remove("selected")
+    } else {
+        loop = true
+        loopButton.classList.add("selected")
+    }
+}
+
 document.querySelector("button.clear").onclick = () => {
     data.forEach(row => row.fill(null))
     redraw()
 }
 
-document.querySelector("button.submit").onclick = () => {
+const playButton = document.querySelector("button.play")
+playButton.onclick = () => playing ? pause() : play()
+
+let period = 16
+
+const periodInput = document.querySelector("input.rate")
+periodInput.value = period
+periodInput.onchange = () => {
+    period = parseFloat(document.querySelector("input.rate").value) || period
+}
+
+let lastTime = null
+
+const playhead = document.querySelector(".playhead")
+const updatePlayhead = () => {
+    const time = Date.now()
+    playheadPos += (time - lastTime) / 1000 / period * canvas.width
+    lastTime = time
+    if (playheadPos >= canvas.width) {
+        if (loop) {
+            playheadPos %= canvas.width
+        } else {
+            stop()
+        }
+    }
+    playhead.style.left = playheadPos + "px"
+}
+
+let playheadInterval = null
+
+const play = () => {
     socket.send(JSON.stringify(data.map(row => row.map(y => y ? 1 - Math.min(1, y / canvas.height) : null))))
+    lastTime = Date.now()
+    playButton.children[0].innerText = "pause"
+    playheadInterval = setInterval(updatePlayhead, 10)
+    playing = true
+    playhead.hidden = false
+}
+
+const pause = () => {
+    playButton.children[0].innerText = "play_arrow"
+    playing = false
+    clearInterval(playheadInterval)
+}
+
+const stop = () => {
+    playButton.children[0].innerText = "play_arrow"
+    playing = false
+    playheadPos = 0
+    clearInterval(playheadInterval)
+    playhead.hidden = true
 }
 
 document.querySelectorAll(".palette button").forEach((el, index) => {

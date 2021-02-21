@@ -55,20 +55,78 @@ button:active {
 button.start {
     width: 250px;
     height: 100px;
+    font-weight: 900;
+    font-size: x-large;
+}
+
+input.rate {
+    background-color: black;
+    color: white;
+    font-family: inherit;
+    width: 38px;
+    appearance: textfield;
+    border: 1.5px solid white;
+    font-size: larger;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .controls {
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.controls > * {
+    pointer-events: all;
+    width: 38px;
+    height: 32px;
+    border-radius: 0;
+    border-right: none !important;
+    text-align: center;
+}
+
+.controls > button {
+    padding-top: 2px;
+}
+
+.controls > *:first-child {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+.controls > *:last-child {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-right: 1px solid white !important;
+}
+
+.controls .loop.selected {
+    background-color: white;
+    color: black;
+}
+
+.controls .loop.selected:active {
+    background-color: black;
+    color: white;
 }
 
 .palette {
     position: absolute;
     bottom: 0;
-    left: 50%;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+}
+
+.palette > * {
+    pointer-events: all;
 }
 
 .palette button {
@@ -96,4 +154,13 @@ button.start {
 
 .palette .color-3 {
     background-color: #4ec921 /*#f7e41c*/;
+}
+
+.playhead {
+    position: absolute;
+    width: 1px;
+    height: 100%;
+    left: -1px;
+    top: 0;
+    background-color: white;
 }
