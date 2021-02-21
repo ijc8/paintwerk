@@ -1,15 +1,22 @@
 const canvas = document.querySelector("canvas")
 const context = canvas.getContext("2d")
 
-const colors = ["#ff714d", "#058fee", "#4ec921", "#aaaaaa"]
+// VCA, VCF, VCO, LFO
+const colors = ["#aaaaaa", "#ff714d", "#058fee", "#4ec921"]
 let data = Array(4).fill(0).map(() => Array(canvas.width).fill(null))
 let selectedColors = [0]
 let paint = false
 let loop = false
 let playing = false
 let playheadPos = 0
+let hasMouse = true
 
 socket = new WebSocket("ws://localhost:8765")
+
+const send = (obj) => {
+    // console.log("sending", obj)
+    socket.send(JSON.stringify(obj))
+}
 
 window.onload = window.onresize = () => {
     console.log("resize")
@@ -44,10 +51,12 @@ loopButton.onclick = (e) => {
         loop = true
         loopButton.classList.add("selected")
     }
+    send({type: "loop", payload: loop})
 }
 
 document.querySelector("button.clear").onclick = () => {
     data.forEach(row => row.fill(null))
+    dirty = true
     redraw()
 }
 
@@ -59,7 +68,13 @@ let period = 16
 const periodInput = document.querySelector("input.rate")
 periodInput.value = period
 periodInput.onchange = () => {
-    period = parseFloat(document.querySelector("input.rate").value) || period
+    let value = parseFloat(periodInput.value)
+    if (value) {
+        period = value
+        send({type: 'period', payload: period})
+    } else {
+        periodInput.value = period
+    }
 }
 
 let lastTime = null
@@ -82,7 +97,7 @@ const updatePlayhead = () => {
 let playheadInterval = null
 
 const play = () => {
-    socket.send(JSON.stringify(data.map(row => row.map(y => y ? 1 - Math.min(1, y / canvas.height) : null))))
+    send({type: 'play', payload: true})
     lastTime = Date.now()
     playButton.children[0].innerText = "pause"
     playheadInterval = setInterval(updatePlayhead, 10)
@@ -91,6 +106,7 @@ const play = () => {
 }
 
 const pause = () => {
+    send({type: 'play', payload: false})
     playButton.children[0].innerText = "play_arrow"
     playing = false
     clearInterval(playheadInterval)
@@ -113,7 +129,7 @@ paletteButtons.forEach((el, index) => {
         paletteButtons.forEach(e => e.classList.remove("selected"))
         // el.classList.add("selected")
         // color = index
-        if (event.ctrlKey) {
+        if (event.ctrlKey || !hasMouse) {
             if (selectedColors.includes(index)) {
                 selectedColors = selectedColors.filter(i => i !== index)
             } else {
@@ -127,6 +143,17 @@ paletteButtons.forEach((el, index) => {
 })
 
 let lastPoint = null
+let dirty = false
+
+const updateServerData = () => {
+    if (dirty) {
+        send({type: 'data', payload: data.map(row => row.map(y => y ? 1 - Math.min(1, y / canvas.height) : null))})
+        dirty = false
+    }
+}
+
+// Update server data every 500ms.
+setInterval(updateServerData, 500)
 
 const addClick = (x, y, dragging) => {
     if (dragging) {
@@ -142,6 +169,7 @@ const addClick = (x, y, dragging) => {
             selectedColors.forEach(color => data[color][start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0])))
         }
         selectedColors.forEach(color => data[color][x] = y)
+        dirty = true
     }
 
     lastPoint = [x, y]
@@ -206,9 +234,9 @@ function touchMoveEventHandler(e) {
     }
 }
 
-function setUpHandler(isMouseandNotTouch, detectEvent) {
+function setUpHandler(detectEvent) {
     removeRaceHandlers()
-    if (isMouseandNotTouch) {
+    if (hasMouse) {
         canvas.addEventListener('mouseup', mouseUpEventHandler)
         canvas.addEventListener('mousemove', mouseMoveEventHandler)
         canvas.addEventListener('mousedown', mouseDownEventHandler)
@@ -222,11 +250,13 @@ function setUpHandler(isMouseandNotTouch, detectEvent) {
 }
 
 function mouseWins(e) {
-    setUpHandler(true, e);
+    hasMouse = true
+    setUpHandler(e)
 }
 
 function touchWins(e) {
-    setUpHandler(false, e);
+    hasMouse = false
+    setUpHandler(e)
 }
 
 function removeRaceHandlers() {

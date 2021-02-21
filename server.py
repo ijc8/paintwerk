@@ -4,6 +4,7 @@ import os
 from http import HTTPStatus
 import json
 import time
+import threading
 
 
 MIME_TYPES = {
@@ -53,18 +54,33 @@ async def process_request(path, request_headers):
 
 
 async def serve(websocket, path):
+    global data, playing, loop, period, start_time, ticks
     print("New WebSocket connection from", websocket.remote_address)
     while websocket.open:
-        data = json.loads(await websocket.recv())
-        print(data)
-        with open('/dev/ttyACM0', 'wb') as f:
-            for i, value in enumerate(data):
-                if i % 10 == 0:
-                    print(round(i / 1920 * 100))
-                if value is not None:
-                    f.write(bytes([round(value * 255), 1]))
-                    f.flush()
-                time.sleep(0.01)
+        message = json.loads(await websocket.recv())
+        if message['type'] == 'data':
+            data = message['payload']
+        elif message['type'] == 'play':
+            if message['payload']:
+                start_time = time.time()
+                ticks = 0
+            playing = message['payload']
+        elif message['type'] == 'loop':
+            loop = message['payload']
+        elif message['type'] == 'period':
+            if playing:
+                start_time = time.time()
+                ticks = 0
+            period = message['payload']
+        # print(data)
+        # with open('/dev/ttyACM0', 'wb') as f:
+        #     for i, value in enumerate(data):
+        #         if i % 10 == 0:
+        #             print(round(i / 1920 * 100))
+        #         if value is not None:
+        #             f.write(bytes([round(value * 255), 1]))
+        #             f.flush()
+        #         time.sleep(0.01)
     # This print will not run when abrnomal websocket close happens
     # for example when tcp connection dies and no websocket close frame is sent
     print("WebSocket connection closed for", websocket.remote_address)
@@ -72,17 +88,50 @@ async def serve(websocket, path):
 
 data = [[None] * 1920 for _ in range(4)]
 playing = False
-looping = False
-position = 0
+loop = False
+pos = 0
 period = 16
+start_time = 0
+ticks = 0
 
 # This will run in a separate thread.
-# def play():
-#     while True:
-#         if not playing:
-#             time.sleep(0.1)
-#             continue
-#         data[pos]
+def play():
+    global playing, pos, ticks
+    f = None
+    try:
+        f = open('/dev/ttyACM0', 'wb')
+    except PermissionError:
+        print("Arduino disconnected, printing values instead.")
+    while True:
+        if not playing:
+            time.sleep(0.1)
+            continue
+        chunk = bytes([round((data[i][pos] or 0) * 255) for i in range(4)])
+        if f:
+            f.write(chunk)
+            f.flush()
+        print(' '.join(f'{x:02X}' for x in chunk))
+        pos += 1
+        if pos >= len(data[0]):
+            if loop:
+                pos %= len(data[0])
+            else:
+                pos = 0
+                playing = False
+        ticks += 1
+        # We should be at `start_time + period / len(data[0]) * steps`.
+        t = time.time()
+        target = start_time + period / len(data[0]) * ticks
+        delta = target - t
+        # print(start_time, target, t, period, period / len(data[0]), ticks, delta)
+        if delta < 0:
+            print(f"Warning: {delta}s behind schedule.")
+        else:
+            time.sleep(delta)
+
+
+play_thread = threading.Thread(target=play)
+play_thread.start()
 
 
 start_server = websockets.serve(serve, "0.0.0.0", 8765, process_request=process_request)
