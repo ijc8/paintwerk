@@ -69,6 +69,22 @@ async def serve(websocket, path):
     # for example when tcp connection dies and no websocket close frame is sent
     print("WebSocket connection closed for", websocket.remote_address)
 
+
+data = [[None] * 1920 for _ in range(4)]
+playing = False
+looping = False
+position = 0
+period = 16
+
+# This will run in a separate thread.
+# def play():
+#     while True:
+#         if not playing:
+#             time.sleep(0.1)
+#             continue
+#         data[pos]
+
+
 start_server = websockets.serve(serve, "0.0.0.0", 8765, process_request=process_request)
 
 if __name__ == '__main__':

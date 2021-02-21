@@ -1,9 +1,9 @@
 const canvas = document.querySelector("canvas")
 const context = canvas.getContext("2d")
 
-const colors = ["#ffffff", "#ff714d", "#05bfee", "#4ec921"]
+const colors = ["#ff714d", "#058fee", "#4ec921", "#aaaaaa"]
 let data = Array(4).fill(0).map(() => Array(canvas.width).fill(null))
-let color = 0
+let selectedColors = [0]
 let paint = false
 let loop = false
 let playing = false
@@ -104,12 +104,25 @@ const stop = () => {
     playhead.hidden = true
 }
 
-document.querySelectorAll(".palette button").forEach((el, index) => {
-    if (index === color) el.classList.add("selected")
+const paletteButtons = document.querySelectorAll(".palette button")
+paletteButtons.forEach((el, index) => {
+    el.style.backgroundColor = colors[index]
+    if (selectedColors.includes(index)) el.classList.add("selected")
     el.onclick = (event) => {
-        document.querySelectorAll(".palette button").forEach(e => e.classList.remove("selected"))
-        el.classList.add("selected")
-        color = index
+        console.log(event)
+        paletteButtons.forEach(e => e.classList.remove("selected"))
+        // el.classList.add("selected")
+        // color = index
+        if (event.ctrlKey) {
+            if (selectedColors.includes(index)) {
+                selectedColors = selectedColors.filter(i => i !== index)
+            } else {
+                selectedColors.push(index)
+            }
+        } else {
+            selectedColors = [index]
+        }
+        selectedColors.forEach(color => paletteButtons[color].classList.add("selected"))
     }
 })
 
@@ -126,9 +139,9 @@ const addClick = (x, y, dragging) => {
             end = [x, y]
         }
         for (let i = 0; i <= end[0] - start[0]; i++) {
-            data[color][start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0]))
+            selectedColors.forEach(color => data[color][start[0] + i] = start[1] + (end[1] - start[1]) * (i / (end[0] - start[0])))
         }
-        data[color][x] = y
+        selectedColors.forEach(color => data[color][x] = y)
     }
 
     lastPoint = [x, y]
@@ -136,17 +149,20 @@ const addClick = (x, y, dragging) => {
 
 const redraw = () => {
     // console.log("redraw")
-    context.lineJoin = "round"
-    // context.lineWidth = 5
+    // context.lineJoin = "round"
+    context.lineWidth = 3
     // Clears the canvas
+    context.globalCompositeOperation = "lighten"
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
+    // context.fillStyle = "#000000"
+    // context.fillRect(0, 0, context.canvas.width, context.canvas.height)
 
     for (let color = 0; color < data.length; color++) {
         context.strokeStyle = colors[color]
         context.beginPath()
         for (let i = 0; i < data[color].length; i++) {
             if (data[color][i] === null) {
-                context.closePath()
+                // context.closePath()
                 context.beginPath()
             } else {
                 context.lineTo(i, Math.round(data[color][i]))
