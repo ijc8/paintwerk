@@ -12,7 +12,7 @@ MIME_TYPES = {
     "css": "text/css"
 }
 
-SERVER_ROOT = os.getcwd()
+SERVER_ROOT = os.path.join(os.getcwd(), 'client')
 
 
 # https://gist.github.com/artizirk/04eb23d957d7916c01ca632bb27d5436

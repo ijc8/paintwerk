@@ -1,6 +1,6 @@
 const canvas = document.querySelector("canvas")
 const context = canvas.getContext("2d")
-context.strokeStyle = "#ff0000"
+context.strokeStyle = "#ffffff"
 context.lineJoin = "round"
 context.lineWidth = 5
 
@@ -64,6 +64,9 @@ const addClick = (x, y, dragging) => {
 }
 
 const redraw = () => {
+    context.strokeStyle = "#ffffff"
+    context.lineJoin = "round"
+    // context.lineWidth = 5
     // Clears the canvas
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
 

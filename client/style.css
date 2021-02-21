@@ -9,12 +9,25 @@ body {
     width: 100%;
     height: 100%;
     display: flex;
+    background-color: black;
+    color: white;
+    font-family: 'Nunito', sans-serif;
 }
 
 canvas {
-    background-color: white;
+    background-color: black;
     box-sizing: border-box;
     border: 1px solid black;
+    color: white;
+}
+
+.start-screen h1 {
+    margin: 0;
+}
+
+h4 {
+    margin: 0;
+    margin-bottom: 10px;
 }
 
 .start-screen {
@@ -24,9 +37,24 @@ canvas {
     text-align: center;
 }
 
+button {
+    font-family: inherit;
+    background-color: black;
+    color: white;
+    font-size: larger;
+    border: 1.5px solid white;
+    border-radius: 10px;
+}
+
+button:active {
+    background-color: white;
+    color: black;
+    font-weight: bold;
+}
+
 button.start {
-    width: 50%;
-    height: 50%;
+    width: 250px;
+    height: 100px;
 }
 
 .controls {
