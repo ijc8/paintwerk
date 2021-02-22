@@ -3,6 +3,7 @@ import websockets
 import os
 from http import HTTPStatus
 import json
+import math
 import time
 import threading
 
@@ -53,37 +54,44 @@ async def process_request(path, request_headers):
     return HTTPStatus.OK, response_headers, body
 
 
+users = set()
+
+async def broadcast(sender, message):
+    recipients = users - {sender}
+    # print("sending to", recipients)
+    if recipients:
+        await asyncio.wait([user.send(message) for user in recipients])
+
 async def serve(websocket, path):
-    global data, playing, loop, period, start_time, ticks
+    global data, playing, loop, period, start_time, ticks, pos
     print("New WebSocket connection from", websocket.remote_address)
-    while websocket.open:
-        message = json.loads(await websocket.recv())
-        if message['type'] == 'data':
-            data = message['payload']
-        elif message['type'] == 'play':
-            if message['payload']:
-                start_time = time.time()
-                ticks = 0
-            playing = message['payload']
-        elif message['type'] == 'loop':
-            loop = message['payload']
-        elif message['type'] == 'period':
-            if playing:
-                start_time = time.time()
-                ticks = 0
-            period = message['payload']
-        # print(data)
-        # with open('/dev/ttyACM0', 'wb') as f:
-        #     for i, value in enumerate(data):
-        #         if i % 10 == 0:
-        #             print(round(i / 1920 * 100))
-        #         if value is not None:
-        #             f.write(bytes([round(value * 255), 1]))
-        #             f.flush()
-        #         time.sleep(0.01)
-    # This print will not run when abrnomal websocket close happens
-    # for example when tcp connection dies and no websocket close frame is sent
-    print("WebSocket connection closed for", websocket.remote_address)
+    users.add(websocket)
+    await websocket.send(json.dumps({"type": "data", "payload": data}))
+    await websocket.send(json.dumps({"type": "loop", "payload": loop}))
+    await websocket.send(json.dumps({"type": "period", "payload": period}))
+    await websocket.send(json.dumps({"type": "play", "payload": playing, "position": pos}))
+    try:
+        while websocket.open:
+            blob = await websocket.recv()
+            message = json.loads(blob)
+            if message['type'] == 'data':
+                data = message['payload']
+            elif message['type'] == 'play':
+                if message['payload']:
+                    start_time = time.time()
+                    ticks = 0
+                playing = message['payload']
+                pos = math.floor(message['position'])
+            elif message['type'] == 'loop':
+                loop = message['payload']
+            elif message['type'] == 'period':
+                if playing:
+                    start_time = time.time()
+                    ticks = 0
+                period = message['payload']
+            await broadcast(websocket, blob)
+    finally:
+        users.remove(websocket)
 
 
 data = [[None] * 1920 for _ in range(4)]

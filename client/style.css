@@ -19,6 +19,8 @@ canvas {
     box-sizing: border-box;
     border: 1px solid black;
     color: white;
+    width: 100%;
+    height: 100%;
 }
 
 .start-screen h1 {
@@ -126,11 +128,18 @@ input.rate {
     pointer-events: none;
 }
 
-.palette > * {
-    pointer-events: all;
+.palette > div {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.palette span {
+    font-weight: 900;
+    font-size: 0.8em;
 }
 
 .palette button {
+    pointer-events: all;
     width: 32px;
     height: 32px;
     filter: brightness(70%);

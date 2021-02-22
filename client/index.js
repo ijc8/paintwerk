@@ -9,22 +9,51 @@ let paint = false
 let loop = false
 let playing = false
 let playheadPos = 0
-let hasMouse = true
+let hasMouse = !window.matchMedia("(pointer:coarse)").matches
 
 socket = new WebSocket("ws://" + location.host)
+socket.onmessage = (message) => {
+    message = JSON.parse(message.data)
+    console.log(message)
+    if (message.type === "data") {
+        data = message.payload.map(row => row.map(x => x === null ? null : (1 - x) * canvas.height))
+        redraw()
+    } else if (message.type === "play") {
+        playheadPos = message.position
+        // TODO: reduce duplication
+        if (message.payload) {
+            lastTime = Date.now()
+            playButton.children[0].innerText = "pause"
+            playheadInterval = setInterval(updatePlayhead, 10)
+            playing = true
+            playhead.hidden = false
+        } else {
+            playButton.children[0].innerText = "play_arrow"
+            playing = false
+            clearInterval(playheadInterval)
+        }
+    } else if (message.type === "period") {
+        period = message.payload
+        periodInput.value = period
+    } else if (message.type === "loop") {
+        loop = message.payload
+        if (loop) loopButton.classList.add("selected")
+        else loopButton.classList.remove("selected")
+    }
+}
 
 const send = (obj) => {
     // console.log("sending", obj)
     socket.send(JSON.stringify(obj))
 }
 
-window.onload = window.onresize = () => {
-    console.log("resize")
-    data = data.map(row => row.map(y => y ? (y * window.innerHeight / canvas.height) : y))
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-    redraw()
-}
+// window.onload = window.onresize = () => {
+//     // console.log("resize")
+//     data = data.map(row => row.map(y => y ? (y * window.innerHeight / canvas.height) : y))
+//     canvas.width = window.innerWidth
+//     canvas.height = window.innerHeight
+//     redraw()
+// }
 
 document.querySelector("button.start").onclick = () => {
     const el = document.querySelector(".canvas")
@@ -91,13 +120,13 @@ const updatePlayhead = () => {
             stop()
         }
     }
-    playhead.style.left = playheadPos + "px"
+    playhead.style.left = (playheadPos/canvas.width*100) + "%"
 }
 
 let playheadInterval = null
 
 const play = () => {
-    send({type: 'play', payload: true})
+    send({type: 'play', payload: true, position: playheadPos})
     lastTime = Date.now()
     playButton.children[0].innerText = "pause"
     playheadInterval = setInterval(updatePlayhead, 10)
@@ -106,7 +135,7 @@ const play = () => {
 }
 
 const pause = () => {
-    send({type: 'play', payload: false})
+    send({type: 'play', payload: false, position: playheadPos})
     playButton.children[0].innerText = "play_arrow"
     playing = false
     clearInterval(playheadInterval)
@@ -125,7 +154,7 @@ paletteButtons.forEach((el, index) => {
     el.style.backgroundColor = colors[index]
     if (selectedColors.includes(index)) el.classList.add("selected")
     el.onclick = (event) => {
-        console.log(event)
+        // console.log(event)
         paletteButtons.forEach(e => e.classList.remove("selected"))
         // el.classList.add("selected")
         // color = index
@@ -156,6 +185,7 @@ const updateServerData = () => {
 setInterval(updateServerData, 500)
 
 const addClick = (x, y, dragging) => {
+    x = Math.round(x)
     if (dragging) {
         let start, end;
         if (x < lastPoint[0]) {
@@ -204,39 +234,46 @@ const redraw = () => {
 
 const mouseDownEventHandler = (e) => {
     paint = true
-    const x = e.pageX - canvas.offsetLeft
-    const y = e.pageY - canvas.offsetTop
+    const x = (e.pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
+    const y = (e.pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
     addClick(x, y, false)
 }
 
 const touchStartEventHandler = (e) => {
-    console.log("start!")
+    // console.log("start!")
     paint = true
-    addClick(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop, false)
+    const x = (e.touches[0].pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
+    const y = (e.touches[0].pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
+    addClick(x, y, false)
 }
 
 const mouseUpEventHandler = (e) => {
-    console.log("end!")
+    // console.log("end!")
     paint = false
 }
 
 const mouseMoveEventHandler = (e) => {
     if (paint) {
-        addClick(e.pageX - canvas.offsetLeft, e.pageY - canvas.offsetTop, true)
+        const x = (e.pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
+        const y = (e.pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
+        addClick(x, y, true)
         redraw()
     }
 }
 
 function touchMoveEventHandler(e) {
     if (paint) {
-        console.log("drag!", e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop)
-        addClick(Math.round(e.touches[0].pageX - canvas.offsetLeft), Math.round(e.touches[0].pageY - canvas.offsetTop), true)
+        // console.log("drag!", e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop)
+        const x = (e.touches[0].pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
+        const y = (e.touches[0].pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
+        addClick(x, y, true)
         redraw()
     }
 }
 
 function setUpHandler(detectEvent) {
-    removeRaceHandlers()
+    canvas.removeEventListener('mousedown', mouseWins)
+    canvas.removeEventListener('touchstart', touchWins)
     if (hasMouse) {
         canvas.addEventListener('mouseup', mouseUpEventHandler)
         canvas.addEventListener('mousemove', mouseMoveEventHandler)
@@ -258,11 +295,6 @@ function mouseWins(e) {
 function touchWins(e) {
     hasMouse = false
     setUpHandler(e)
-}
-
-function removeRaceHandlers() {
-    canvas.removeEventListener('mousedown', mouseWins)
-    canvas.removeEventListener('touchstart', touchWins)
 }
 
 canvas.addEventListener('mousedown', mouseWins)
