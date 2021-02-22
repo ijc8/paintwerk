@@ -8,6 +8,9 @@ import time
 import threading
 
 
+# NOTE: Run `stty -F /dev/ttyACM0 115200 -hupcl raw` to prepare for serial communication with the Arduino.
+
+
 MIME_TYPES = {
     "html": "text/html",
     "js": "text/javascript",
@@ -114,11 +117,11 @@ def play():
         if not playing:
             time.sleep(0.1)
             continue
+        # print('before', pos)
         chunk = bytes([round((data[i][pos] or 0) * 255) for i in range(4)])
         if f:
             f.write(chunk)
             f.flush()
-        print(' '.join(f'{x:02X}' for x in chunk))
         pos += 1
         if pos >= len(data[0]):
             if loop:
@@ -126,6 +129,8 @@ def play():
             else:
                 pos = 0
                 playing = False
+                f.write(bytes([0] * 4))
+                f.flush()
         ticks += 1
         # We should be at `start_time + period / len(data[0]) * steps`.
         t = time.time()

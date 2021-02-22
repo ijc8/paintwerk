@@ -185,7 +185,7 @@ const updateServerData = () => {
 setInterval(updateServerData, 500)
 
 const addClick = (x, y, dragging) => {
-    x = Math.round(x)
+    x = Math.max(0, Math.min(Math.round(x), canvas.width - 1))
     if (dragging) {
         let start, end;
         if (x < lastPoint[0]) {
