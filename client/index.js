@@ -43,17 +43,8 @@ socket.onmessage = (message) => {
 }
 
 const send = (obj) => {
-    // console.log("sending", obj)
     socket.send(JSON.stringify(obj))
 }
-
-// window.onload = window.onresize = () => {
-//     // console.log("resize")
-//     data = data.map(row => row.map(y => y ? (y * window.innerHeight / canvas.height) : y))
-//     canvas.width = window.innerWidth
-//     canvas.height = window.innerHeight
-//     redraw()
-// }
 
 document.querySelector("button.start").onclick = () => {
     const el = document.querySelector(".canvas")
@@ -154,10 +145,7 @@ paletteButtons.forEach((el, index) => {
     el.style.backgroundColor = colors[index]
     if (selectedColors.includes(index)) el.classList.add("selected")
     el.onclick = (event) => {
-        // console.log(event)
         paletteButtons.forEach(e => e.classList.remove("selected"))
-        // el.classList.add("selected")
-        // color = index
         if (event.ctrlKey || !hasMouse) {
             if (selectedColors.includes(index)) {
                 selectedColors = selectedColors.filter(i => i !== index)
@@ -206,21 +194,16 @@ const addClick = (x, y, dragging) => {
 }
 
 const redraw = () => {
-    // console.log("redraw")
-    // context.lineJoin = "round"
     context.lineWidth = 3
     // Clears the canvas
     context.globalCompositeOperation = "lighten"
     context.clearRect(0, 0, context.canvas.width, context.canvas.height)
-    // context.fillStyle = "#000000"
-    // context.fillRect(0, 0, context.canvas.width, context.canvas.height)
 
     for (let color = 0; color < data.length; color++) {
         context.strokeStyle = colors[color]
         context.beginPath()
         for (let i = 0; i < data[color].length; i++) {
             if (data[color][i] === null) {
-                // context.closePath()
                 context.stroke()
                 context.beginPath()
             } else {
@@ -228,7 +211,6 @@ const redraw = () => {
             }
         }
         context.stroke()
-        // context.closePath()
     }
 }
 
@@ -240,7 +222,6 @@ const mouseDownEventHandler = (e) => {
 }
 
 const touchStartEventHandler = (e) => {
-    // console.log("start!")
     paint = true
     const x = (e.touches[0].pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
     const y = (e.touches[0].pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
@@ -248,7 +229,6 @@ const touchStartEventHandler = (e) => {
 }
 
 const mouseUpEventHandler = (e) => {
-    // console.log("end!")
     paint = false
 }
 
@@ -263,7 +243,6 @@ const mouseMoveEventHandler = (e) => {
 
 function touchMoveEventHandler(e) {
     if (paint) {
-        // console.log("drag!", e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop)
         const x = (e.touches[0].pageX - canvas.offsetLeft) * canvas.width / canvas.clientWidth
         const y = (e.touches[0].pageY - canvas.offsetTop) * canvas.height / canvas.clientHeight
         addClick(x, y, true)

@@ -61,7 +61,6 @@ users = set()
 
 async def broadcast(sender, message):
     recipients = users - {sender}
-    # print("sending to", recipients)
     if recipients:
         await asyncio.wait([user.send(message) for user in recipients])
 
@@ -117,11 +116,12 @@ def play():
         if not playing:
             time.sleep(0.1)
             continue
-        # print('before', pos)
         chunk = bytes([round((data[i][pos] or 0) * 255) for i in range(4)])
         if f:
             f.write(chunk)
             f.flush()
+        else:
+            print(chunk)
         pos += 1
         if pos >= len(data[0]):
             if loop:
@@ -129,14 +129,16 @@ def play():
             else:
                 pos = 0
                 playing = False
-                f.write(bytes([0] * 4))
-                f.flush()
+                if f:
+                    f.write(bytes([0] * 4))
+                    f.flush()
+                else:
+                    print(bytes([0] * 4))
         ticks += 1
         # We should be at `start_time + period / len(data[0]) * steps`.
         t = time.time()
         target = start_time + period / len(data[0]) * ticks
         delta = target - t
-        # print(start_time, target, t, period, period / len(data[0]), ticks, delta)
         if delta < 0:
             print(f"Warning: {delta}s behind schedule.")
         else:

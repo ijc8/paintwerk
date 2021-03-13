@@ -73,6 +73,10 @@ input.rate {
     box-sizing: border-box;
 }
 
+input.rate::-webkit-inner-spin-button {
+    display: none;
+}
+
 .controls {
     position: absolute;
     top: 0;
